@@ -1,0 +1,167 @@
+Estoy desarrollando con vos un sistema llamado SOMA (Sistema Organizado de Mensajería y Automatización). El sistema está pensado para automatizar mensajes, controlar stock, gestionar ventas y delivery, e incluir IA para responder chats y sugerencias. El backend lo estamos desarrollando en Python con FastAPI y SQLite (por ahora), y luego se podrá migrar a PostgreSQL. Vamos trabajando por módulos y el primer módulo es la base de datos de productos, clientes y pedidos, con sus endpoints REST. El frontend será en Flutter, pero eso viene después. Nuestra lógica de automatización incluirá reglas simples al principio y luego IA real. No pierdas este contexto aunque se corte la conversación, y mantené un estilo directo, sin condescendencia, como comandante y socio técnico. Si te paso este prompt, seguí desde donde quedamos o actualizalo si el proyecto avanzó. Comenzamos por el backend básico. No asumas nada que no esté en este prompt salvo que yo lo apruebe.
+
+
+
+🧱 PASO 1: Diseño de modelos de datos (en texto plano)
+Para que estemos seguros de que cada tabla (entidad) tiene lo que necesita, sin código todavía. Lo validamos juntos.
+
+Ejemplo:
+
+text
+Copy
+Edit
+Producto:
+- id (int)
+- nombre (string)
+- stock_actual (int)
+- precio_unitario (float)
+- unidad (string, ej: kg, unidad, litro)
+- creado_en (datetime)
+- actualizado_en (datetime)
+⚙️ PASO 2: Estructura de proyecto FastAPI
+Creo la estructura de carpetas:
+
+pgsql
+Copy
+Edit
+soma/
+├── main.py
+├── models/
+├── schemas/
+├── routes/
+├── database.py
+└── crud/
+🔌 PASO 3: Endpoints REST funcionales
+Ejemplo:
+
+GET /productos
+
+POST /productos
+
+PUT /productos/{id}
+
+DELETE /productos/{id}
+
+🧪 PASO 4: Testear vía Swagger UI
+FastAPI ya trae Swagger por defecto, así que vamos viendo todo en el navegador.
+
+🧠 PASO 5: Agregar automatización e IA
+Una vez que esto funcione, ahí sí conectamos:
+
+WhatsApp
+
+Reglas inteligentes
+
+IA (GPT) para respuestas o predicciones
+
+
+
+
+soma_backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── producto.py
+│   │   ├── cliente.py
+│   │   ├── pedido.py
+│   │   ├── detalle_pedido.py
+│   │   └── mensaje.py
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   ├── producto.py
+│   │   ├── cliente.py
+│   │   ├── pedido.py
+│   │   ├── detalle_pedido.py
+│   │   └── mensaje.py
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── producto.py
+│   │   ├── cliente.py
+│   │   ├── pedido.py
+│   │   ├── detalle_pedido.py
+│   │   └── mensaje.py
+│   ├── crud/
+│   │   ├── __init__.py
+│   │   ├── producto.py
+│   │   ├── cliente.py
+│   │   ├── pedido.py
+│   │   ├── detalle_pedido.py
+│   │   └── mensaje.py
+│   ├── database.py
+
+## Bitácora de Integración IA - SOMA
+
+### Fecha: 25 de junio de 2025
+
+**Objetivo**: Integrar respuestas automáticas utilizando OpenRouter (modelo `deepseek/deepseek-r1:free`) en los mensajes tipo "entrada" en el sistema SOMA.
+
+---
+
+### Cambios Realizados en el Código
+
+**Archivo modificado:** `routes/mensajes.py`
+
+#### Comportamiento del endpoint `POST /mensajes/`:
+
+1. Guarda el mensaje recibido como entrada.
+2. Si el mensaje es de tipo `"entrada"`, se realiza búsqueda de palabras clave en el contenido.
+3. Se comparan las palabras encontradas con los nombres de los productos existentes en la base de datos.
+4. Si hay coincidencia:
+
+   * Se genera una respuesta automática llamando a la función `generar_respuesta_ia()`.
+   * Se guarda una nueva entrada del tipo `"automatica"` con la respuesta generada.
+5. Se devuelve una lista con los mensajes guardados (el original y el generado si corresponde).
+
+### Cambios en `generar_respuesta_ia()` (ubicado en `services/ia.py`):
+
+* Se usa el modelo gratuito `deepseek/deepseek-r1:free` de OpenRouter.
+* Se actualizó la URL del endpoint: `https://openrouter.ai/api/v1/chat/completions`
+* Se agregó manejo de errores con `raise_for_status()`.
+
+### Variables necesarias en `.env`:
+
+```env
+OPENROUTER_API_KEY=sk-or-v1-XXXXXX...
+```
+
+---
+
+### Resultado Esperado
+
+Cuando se envía un mensaje del tipo:
+
+```json
+{
+  "cliente_id": 1,
+  "canal": "WhatsApp",
+  "contenido": "¿Cuánto cuesta el arroz?",
+  "tipo": "entrada"
+}
+```
+
+Y existe un producto llamado `arroz` en la base de datos, se debería guardar también una respuesta automática como:
+
+```json
+{
+  "cliente_id": 1,
+  "canal": "WhatsApp",
+  "contenido": "Hola! Tenemos arroz a 6500 guaraníes. ¿Querés que prepare un pedido para vos?",
+  "tipo": "automatica",
+  "respuesta_de": <id del mensaje original>
+}
+```
+
+---
+
+### Estado Actual: ✅ Funcional
+
+El endpoint ya genera y devuelve las respuestas automáticas correctamente.
+
+---
+
+**Observaciones:**
+
+* Se recomienda registrar los errores de la IA con logging en lugar de `print()`.
+* Se sugiere validar si `producto.nombre.lower()` aparece **como palabra completa** (ya implementado con `re.findall`).

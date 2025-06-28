@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SOMA - Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      padding: 2rem;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 350px));
+      gap: 1.5rem;
+      justify-content: center;
+    }
+    .box {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1.2rem;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.3rem;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin: 0.3rem 0;
+      padding: 0.5rem;
+      font-size: 0.9rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .card {
+      background: #f9f9f9;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      border-radius: 5px;
+      border: 1px solid #eee;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<h1>SOMA - Panel Web</h1>
+
+<div class="container">
+
+  <!-- Productos -->
+  <div class="box">
+    <h2>Productos</h2>
+    <form id="productoForm">
+      <input id="nombreProducto" placeholder="Nombre" required>
+      <input id="unidadProducto" placeholder="Unidad (ej: kg)" required>
+      <input id="precioProducto" type="number" placeholder="Precio" required>
+      <input id="stockProducto" type="number" placeholder="Stock" required>
+      <button type="submit">Agregar</button>
+    </form>
+    <div id="listaProductos"></div>
+  </div>
+
+  <!-- Clientes -->
+  <div class="box">
+    <h2>Clientes</h2>
+    <form id="clienteForm">
+      <input id="nombreCliente" placeholder="Nombre" required>
+      <input id="telefonoCliente" placeholder="Teléfono" required>
+      <button type="submit">Agregar</button>
+    </form>
+    <div id="listaClientes"></div>
+  </div>
+
+  <!-- Mensajes -->
+  <div class="box">
+    <h2>Mensajes</h2>
+    <form id="mensajeForm">
+      <input id="clienteIdMensaje" type="number" placeholder="ID Cliente" required>
+      <input id="canalMensaje" placeholder="Canal (ej: WhatsApp)" required>
+      <textarea id="contenidoMensaje" placeholder="Mensaje..." required></textarea>
+      <button type="submit">Enviar</button>
+    </form>
+    <div id="listaMensajes"></div>
+  </div>
+
+  <!-- Asistente IA 🔥 -->
+  <div class="box">
+    <h2>Asistente IA</h2>
+    <form id="iaForm">
+      <textarea id="mensajeIA" placeholder="¿Qué desea consultar el cliente?" required></textarea>
+      <button type="submit">Consultar IA</button>
+    </form>
+    <div id="respuestaIA" class="card" style="white-space: pre-wrap;"></div>
+  </div>
+
+</div>
+
+<script>
+const api = 'http://localhost:8000';
+
+// Producto
+document.getElementById("productoForm").onsubmit = async (e) => {
+  e.preventDefault();
+  await fetch(api + "/productos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      nombre: nombreProducto.value,
+      descripcion: "",
+      unidad: unidadProducto.value,
+      precio_unitario: parseFloat(precioProducto.value),
+      stock_actual: parseInt(stockProducto.value),
+      stock_minimo: 0,
+      activo: true
+    })
+  });
+  nombreProducto.value = unidadProducto.value = precioProducto.value = stockProducto.value = "";
+  cargarProductos();
+};
+
+async function cargarProductos() {
+  const res = await fetch(api + "/productos");
+  const productos = await res.json();
+  listaProductos.innerHTML = productos.map(p =>
+    `<div class="card"><strong>${p.nombre}</strong> (${p.unidad}) - ${p.precio_unitario} Gs.</div>`
+  ).join('');
+}
+cargarProductos();
+
+// Cliente
+document.getElementById("clienteForm").onsubmit = async (e) => {
+  e.preventDefault();
+  await fetch(api + "/clientes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      nombre: nombreCliente.value,
+      telefono: telefonoCliente.value,
+      direccion: "",
+      notas: ""
+    })
+  });
+  nombreCliente.value = telefonoCliente.value = "";
+  cargarClientes();
+};
+
+async function cargarClientes() {
+  const res = await fetch(api + "/clientes");
+  const clientes = await res.json();
+  listaClientes.innerHTML = clientes.map(c =>
+    `<div class="card"><strong>${c.nombre}</strong> (${c.telefono})</div>`
+  ).join('');
+}
+cargarClientes();
+
+// Mensaje
+document.getElementById("mensajeForm").onsubmit = async (e) => {
+  e.preventDefault();
+  await fetch(api + "/mensajes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      cliente_id: parseInt(clienteIdMensaje.value),
+      canal: canalMensaje.value,
+      contenido: contenidoMensaje.value,
+      tipo: "entrada"
+    })
+  });
+  clienteIdMensaje.value = canalMensaje.value = contenidoMensaje.value = "";
+  setTimeout(cargarMensajes, 1000);
+};
+
+async function cargarMensajes() {
+  const res = await fetch(api + "/mensajes");
+  const mensajes = await res.json();
+  listaMensajes.innerHTML = mensajes.map(m =>
+    `<div class="card"><strong>${m.tipo.toUpperCase()}</strong>: ${m.contenido}</div>`
+  ).reverse().join('');
+}
+cargarMensajes();
+
+// 🔥 IA - Consulta al asistente
+document.getElementById("iaForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const mensaje = mensajeIA.value.trim();
+  if (!mensaje) return;
+
+  document.getElementById("respuestaIA").innerText = "Consultando IA...";
+
+  const res = await fetch(api + "/ia/responder", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mensaje })
+  });
+
+  const data = await res.json();
+  document.getElementById("respuestaIA").innerText = data.respuesta || "Sin respuesta.";
+  mensajeIA.value = "";
+};
+</script>
+
+</body>
+</html>
