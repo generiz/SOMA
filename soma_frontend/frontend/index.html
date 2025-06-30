@@ -110,6 +110,27 @@
     <div id="respuestaIA" class="card" style="white-space: pre-wrap;"></div>
   </div>
 
+  <!-- Conversaciones -->
+  <div class="box">
+    <h2>Conversaciones</h2>
+    <input id="filtroNumeroCliente" placeholder="Filtrar por número cliente..." oninput="cargarConversaciones()" />
+    <div id="listaConversaciones"></div>
+  </div>
+<!-- Registro de Usuario con Token -->
+<div class="box">
+  <h2>Registrar Usuario</h2>
+  <form id="usuarioForm">
+    <input id="nombreUsuario" placeholder="Nombre completo" required>
+    <input id="emailUsuario" type="email" placeholder="Email" required>
+    <input id="numeroWhatsappUsuario" placeholder="Número de WhatsApp (ej: 595...)" required>
+    <input id="tokenWhatsappUsuario" placeholder="Token de acceso" required>
+    <input id="phoneIdUsuario" placeholder="Phone ID (ej: 724...)" required>
+    <textarea id="promptUsuario" placeholder="Prompt personalizado (opcional)"></textarea>
+    <button type="submit">Crear Usuario</button>
+  </form>
+  <div id="mensajeUsuario" class="card"></div>
+</div>
+
 </div>
 
 <script>
@@ -196,13 +217,13 @@ async function cargarMensajes() {
 }
 cargarMensajes();
 
-// 🔥 IA - Consulta al asistente
+// 🔥 IA
 document.getElementById("iaForm").onsubmit = async (e) => {
   e.preventDefault();
   const mensaje = mensajeIA.value.trim();
   if (!mensaje) return;
 
-  document.getElementById("respuestaIA").innerText = "Consultando IA...";
+  respuestaIA.innerText = "Consultando IA...";
 
   const res = await fetch(api + "/ia/responder", {
     method: "POST",
@@ -211,9 +232,64 @@ document.getElementById("iaForm").onsubmit = async (e) => {
   });
 
   const data = await res.json();
-  document.getElementById("respuestaIA").innerText = data.respuesta || "Sin respuesta.";
+  respuestaIA.innerText = data.respuesta || "Sin respuesta.";
   mensajeIA.value = "";
 };
+
+// Conversaciones
+async function cargarConversaciones() {
+  const filtro = filtroNumeroCliente.value.trim();
+  const url = filtro ? `${api}/conversaciones/cliente/${encodeURIComponent(filtro)}` : `${api}/conversaciones/`;
+  try {
+    const res = await fetch(url);
+    const conversaciones = await res.json();
+    listaConversaciones.innerHTML = conversaciones.map(conv => `
+      <div class="card">
+        <strong>Cliente:</strong> ${conv.numero_cliente}<br>
+        <strong>Mensaje:</strong> ${conv.mensaje_cliente}<br>
+        <strong>Respuesta IA:</strong> ${conv.respuesta_ia}<br>
+        <small><em>${new Date(conv.timestamp).toLocaleString()}</em></small>
+      </div>
+    `).reverse().join('');
+  } catch (err) {
+    listaConversaciones.innerHTML = "<div class='card'>No se pudieron cargar las conversaciones.</div>";
+  }
+}
+cargarConversaciones();
+
+// Usuario
+document.getElementById("usuarioForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const mensajeDiv = document.getElementById("mensajeUsuario");
+
+  const datos = {
+    nombre: nombreUsuario.value.trim(),
+    email: emailUsuario.value.trim(),
+    numero_whatsapp: numeroWhatsappUsuario.value.trim(),
+    token_whatsapp: tokenWhatsappUsuario.value.trim(),
+    phone_id: phoneIdUsuario.value.trim(),
+    prompt_personalizado: promptUsuario.value.trim()
+  };
+
+  try {
+    const res = await fetch(api + "/usuarios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(datos)
+    });
+
+    if (!res.ok) {
+      const error = await res.text();
+      mensajeDiv.innerText = "❌ Error: " + error;
+    } else {
+      mensajeDiv.innerText = "✅ Usuario creado correctamente";
+      usuarioForm.reset();
+    }
+  } catch (err) {
+    mensajeDiv.innerText = "❌ Error al conectar con el servidor.";
+  }
+};
+
 </script>
 
 </body>

@@ -2,12 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 import re
+from datetime import datetime
 
 from app.database import get_db
 from app.schemas.mensaje import MensajeCreate, MensajeOut, MensajeUpdate
 from app.crud import mensaje as crud_mensaje
 from app.models.producto import Producto
 from app.models.mensaje import Mensaje
+from app.models.usuario import Usuario
+from app.models.conversacion import Conversacion
 from app.services.ia import generar_respuesta_ia
 
 router = APIRouter()
@@ -28,6 +31,13 @@ def crear_mensaje(mensaje: MensajeCreate, db: Session = Depends(get_db)):
     mensaje_guardado = crud_mensaje.create(db, mensaje)
     respuestas = [mensaje_guardado]
 
+    # 🔍 Buscar el usuario (negocio) por el número de WhatsApp receptor
+    usuario = db.query(Usuario).filter_by(numero_whatsapp=mensaje.canal).first()
+    if not usuario:
+        print(f"[WARN] Usuario no encontrado para el canal: {mensaje.canal}")
+        return respuestas
+
+    # 🧠 Si es un mensaje de entrada, procesamos posible respuesta
     if mensaje.tipo == "entrada":
         palabras = re.findall(r'\b\w+\b', mensaje.contenido.lower())
         productos = db.query(Producto).all()
@@ -51,6 +61,17 @@ def crear_mensaje(mensaje: MensajeCreate, db: Session = Depends(get_db)):
                 )
                 mensaje_respuesta = crud_mensaje.create(db, mensaje_ia)
                 respuestas.append(mensaje_respuesta)
+
+                # 💾 Guardar en tabla de conversaciones
+                conversacion = Conversacion(
+                    usuario_id=usuario.id,
+                    numero_cliente=mensaje.cliente_id,
+                    mensaje_cliente=mensaje.contenido,
+                    respuesta_ia=respuesta_texto,
+                    timestamp=datetime.utcnow()
+                )
+                db.add(conversacion)
+                db.commit()
                 break
 
     return respuestas

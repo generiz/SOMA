@@ -1,0 +1,1 @@
+ALTER TABLE usuarios ADD COLUMN phone_id TEXT NOT NULL DEFAULT '';

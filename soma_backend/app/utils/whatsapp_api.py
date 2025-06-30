@@ -4,13 +4,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TOKEN = os.getenv("WHATSAPP_TOKEN")
-PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_ID")
+TOKEN_DEFECTO = os.getenv("WHATSAPP_TOKEN")
+PHONE_ID_DEFECTO = os.getenv("WHATSAPP_PHONE_ID")
 
-def enviar_mensaje_whatsapp(destinatario: str, mensaje: str):
-    url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
+def enviar_mensaje_whatsapp(destinatario: str, mensaje: str, token=None, phone_id=None):
+    token = token or TOKEN_DEFECTO
+    phone_id = phone_id or PHONE_ID_DEFECTO
+
+    url = f"https://graph.facebook.com/v18.0/{phone_id}/messages"
     headers = {
-        "Authorization": f"Bearer {TOKEN}",
+        "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
     payload = {
@@ -21,5 +24,7 @@ def enviar_mensaje_whatsapp(destinatario: str, mensaje: str):
     }
 
     response = requests.post(url, headers=headers, json=payload)
-    print(f"STATUS: {response.status_code}")
-    print(f"RESPONSE: {response.text}")
+    print(f"📤 STATUS: {response.status_code}")
+    print(f"📤 RESPONSE: {response.text}")
+
+

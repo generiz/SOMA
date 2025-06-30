@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from .database import create_tables
-from .routes import producto, cliente, pedido, detalle_pedido, mensaje, ia, webhook
+from .routes import producto, cliente, pedido, detalle_pedido, mensaje, ia, webhook, usuario, conversacion
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -24,7 +24,8 @@ app.include_router(detalle_pedido.router, prefix="/detalles", tags=["Detalles de
 app.include_router(mensaje.router, prefix="/mensajes", tags=["Mensajes"])
 app.include_router(ia.router)
 app.include_router(webhook.router)  # webhook para WhatsApp
-
+app.include_router(usuario.router, prefix="/usuarios", tags=["Usuarios"])
+app.include_router(conversacion.router)
 # Ruta raíz para servir el frontend
 @app.get("/")
 def leer_panel():
@@ -32,6 +33,10 @@ def leer_panel():
         os.path.join(os.path.dirname(__file__), "..", "..", "soma_frontend", "frontend", "index.html")
     )
     return FileResponse(index_path)
+@app.get("/testping")
+def testping():
+    print("✅ /testping activado correctamente")
+    return {"pong": True}
 
 
 # Ruta de la base de datos (si la necesitás)
