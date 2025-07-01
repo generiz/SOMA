@@ -1,4 +1,4 @@
-# SOMA - Sistema Organizado de Mensajería y Automatización
+Kon# SOMA - Sistema Organizado de Mensajería y Automatización
 
 SOMA es un sistema modular que combina backend en FastAPI, frontend web moderno y conexión con WhatsApp Cloud API para crear chatbots automatizados con IA, pensados para distintos rubros: ventas, cobros, soporte, promociones y más.
 
@@ -86,4 +86,4 @@ Usar la URL generada como Webhook en Facebook Developer Console.
 
 ## Licencia
 
-MIT © 2025 - SOMA Comandante Team
+MIT © 2025 - Nicolás Pintos
