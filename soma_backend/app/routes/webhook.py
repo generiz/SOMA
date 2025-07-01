@@ -5,6 +5,7 @@ from app.utils.whatsapp_api import enviar_mensaje_whatsapp
 from app.services.ia import generar_respuesta_ia
 from app.database import get_db
 from app.models.usuario import Usuario
+from app.models.conversacion import Conversacion
 import json
 import os
 from dotenv import load_dotenv
@@ -80,6 +81,16 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
                 token=usuario.token_whatsapp,
                 phone_id=usuario.phone_id
             )
+
+            # 💾 Guardar conversación
+            conversacion = Conversacion(
+                usuario_id=usuario.id,
+                numero_cliente=numero_cliente,
+                mensaje_cliente=texto,
+                respuesta_ia=respuesta
+            )
+            db.add(conversacion)
+            db.commit()
 
     except Exception as e:
         print("❌ Error al procesar mensaje:", str(e))

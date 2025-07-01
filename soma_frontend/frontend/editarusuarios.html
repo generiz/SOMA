@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SOMA - Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      padding: 2rem;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 350px));
+      gap: 1.5rem;
+      justify-content: center;
+    }
+    .box {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1.2rem;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.3rem;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin: 0.3rem 0;
+      padding: 0.5rem;
+      font-size: 0.9rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .card {
+      background: #f9f9f9;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      border-radius: 5px;
+      border: 1px solid #eee;
+      font-size: 0.9rem;
+    }
+    .card textarea {
+      width: 100%;
+      resize: vertical;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<h1>SOMA - Panel Web</h1>
+
+<div class="container">
+  <div class="box">
+    <h2>Editar Usuarios</h2>
+    <div id="listaUsuarios"></div>
+  </div>
+</div>
+
+<script>
+const api = 'http://localhost:8000';
+
+async function cargarUsuarios() {
+  const res = await fetch(api + "/usuarios");
+  const usuarios = await res.json();
+  listaUsuarios.innerHTML = usuarios.map(u => `
+    <div class="card">
+      <strong>${u.nombre}</strong> (${u.numero_whatsapp})<br>
+      <input value="${u.email}" placeholder="Email" onchange="editarCampo(${u.id}, 'email', this.value)">
+      <input value="${u.token_whatsapp}" placeholder="Token" onchange="editarCampo(${u.id}, 'token_whatsapp', this.value)">
+      <input value="${u.phone_id}" placeholder="Phone ID" onchange="editarCampo(${u.id}, 'phone_id', this.value)">
+      <textarea placeholder="Prompt personalizado" onchange="editarCampo(${u.id}, 'prompt_personalizado', this.value)">${u.prompt_personalizado || ''}</textarea>
+    </div>
+  `).join('');
+}
+
+async function editarCampo(id, campo, valor) {
+  const res = await fetch(api + "/usuarios/" + id, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ [campo]: valor })
+  });
+  if (!res.ok) alert("Error al actualizar el campo: " + campo);
+}
+
+cargarUsuarios();
+</script>
+
+</body>
+</html>
