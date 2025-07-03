@@ -5,7 +5,8 @@ from app.services.ia import generar_respuesta_ia
 
 router = APIRouter(prefix="/ia", tags=["IA"])
 
+
 @router.post("/responder")
-def responder_mensaje(mensaje: str, db: Session = Depends(get_db)):
-    respuesta = generar_respuesta_ia(mensaje, db)
+def responder_mensaje(mensaje: str, usuario_id: int, db: Session = Depends(get_db)):
+    respuesta = generar_respuesta_ia(mensaje, db, usuario_id)
     return {"respuesta": respuesta}
