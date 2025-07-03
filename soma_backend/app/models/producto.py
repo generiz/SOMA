@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
+
 
 class Producto(Base):
     __tablename__ = "productos"
@@ -13,5 +15,7 @@ class Producto(Base):
     stock_actual = Column(Integer, default=0)
     stock_minimo = Column(Integer, default=0)
     activo = Column(Boolean, default=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    usuario = relationship("Usuario", back_populates="productos")
     creado_en = Column(DateTime, default=datetime.utcnow)
     actualizado_en = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

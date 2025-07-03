@@ -18,12 +18,13 @@ router = APIRouter()
 
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN")  # Token para verificación inicial
 
+
 # 🌐 Verificación del webhook con WhatsApp
 @router.get("/webhook", response_class=PlainTextResponse)
 async def verify_token(
     hub_mode: str = Query(None, alias="hub.mode"),
     hub_challenge: str = Query(None, alias="hub.challenge"),
-    hub_verify_token: str = Query(None, alias="hub.verify_token")
+    hub_verify_token: str = Query(None, alias="hub.verify_token"),
 ):
     print("🧪 LLEGÓ GET /webhook")
     print("🔍 VERIFICACIÓN")
@@ -36,6 +37,7 @@ async def verify_token(
         return PlainTextResponse(content=hub_challenge, status_code=200)
     return PlainTextResponse(content="Invalid verification token", status_code=403)
 
+
 # 📩 Recepción de mensajes de WhatsApp
 @router.post("/webhook")
 async def receive_message(request: Request, db: Session = Depends(get_db)):
@@ -44,10 +46,10 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     print(json.dumps(body, indent=2))
 
     try:
-        entry = body['entry'][0]
-        changes = entry['changes'][0]
-        value = changes['value']
-        messages = value.get('messages')
+        entry = body["entry"][0]
+        changes = entry["changes"][0]
+        value = changes["value"]
+        messages = value.get("messages")
         phone_id = value.get("metadata", {}).get("phone_number_id")
 
         if not phone_id:
@@ -62,15 +64,16 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
 
         if messages:
             msg = messages[0]
-            numero_cliente = msg['from']
-            texto = msg['text']['body']
+            numero_cliente = msg["from"]
+            texto = msg["text"]["body"]
             print(f"💬 Mensaje recibido de {numero_cliente}: {texto}")
 
             # 🤖 Generar respuesta IA personalizada
             respuesta = generar_respuesta_ia(
                 mensaje_usuario=texto,
                 db=db,
-                prompt_personalizado=usuario.prompt_personalizado
+                usuario_id=usuario.id,
+                prompt_personalizado=usuario.prompt_personalizado,
             )
             print("🤖 Respuesta IA generada:", respuesta)
 
@@ -79,7 +82,7 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
                 destinatario=numero_cliente,
                 mensaje=respuesta,
                 token=usuario.token_whatsapp,
-                phone_id=usuario.phone_id
+                phone_id=usuario.phone_id,
             )
 
             # 💾 Guardar conversación
@@ -87,7 +90,7 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
                 usuario_id=usuario.id,
                 numero_cliente=numero_cliente,
                 mensaje_cliente=texto,
-                respuesta_ia=respuesta
+                respuesta_ia=respuesta,
             )
             db.add(conversacion)
             db.commit()

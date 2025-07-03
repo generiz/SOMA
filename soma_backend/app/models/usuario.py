@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from app.database import Base
 
+
 class Usuario(Base):
     __tablename__ = "usuarios"
 
@@ -14,4 +15,9 @@ class Usuario(Base):
     prompt_personalizado = Column(String, nullable=False)
 
     # 🔗 Relación con tabla conversaciones
-    conversaciones = relationship("Conversacion", back_populates="usuario", cascade="all, delete-orphan")
+    conversaciones = relationship(
+        "Conversacion", back_populates="usuario", cascade="all, delete-orphan"
+    )
+    productos = relationship(
+        "Producto", back_populates="usuario", cascade="all, delete-orphan"
+    )

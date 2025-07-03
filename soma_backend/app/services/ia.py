@@ -7,21 +7,26 @@ from app.models.producto import Producto
 load_dotenv()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-def obtener_productos_para_prompt(db: Session):
-    productos = db.query(Producto).filter(Producto.activo == True).all()
+
+def obtener_productos_para_prompt(db: Session, usuario_id: int):
+    productos = (
+        db.query(Producto)
+        .filter(Producto.activo == True, Producto.usuario_id == usuario_id)
+        .all()
+    )
     return [
-        {
-            "nombre": p.nombre,
-            "unidad": p.unidad,
-            "precio_unitario": p.precio_unitario
-        }
+        {"nombre": p.nombre, "unidad": p.unidad, "precio_unitario": p.precio_unitario}
         for p in productos
     ]
 
+
 def construir_prompt(cliente_msg: str, productos: list):
-    lista_prod = "\n".join([
-        f"- {p['nombre']} ({p['unidad']}): Gs. {p['precio_unitario']}" for p in productos
-    ])
+    lista_prod = "\n".join(
+        [
+            f"- {p['nombre']} ({p['unidad']}): Gs. {p['precio_unitario']}"
+            for p in productos
+        ]
+    )
 
     prompt = f"""
 Hola, soy SOMA Assistant, tu fiel ayudante de ventas… y NO, no soy ChatGPT, ni Siri, ni Alexa. Soy un bot simple, directo, y con cero tolerancia a preguntas filosóficas, existenciales o sobre la vida de tu ex.
@@ -54,9 +59,16 @@ Respondé de forma clara, útil y... un poquito con onda. Pero sin pasarte. Si n
 
     return prompt
 
-def generar_respuesta_ia(mensaje_usuario: str, db: Session, prompt_personalizado: str = "") -> str:
-    productos = obtener_productos_para_prompt(db)
-    prompt = prompt_personalizado.strip() if prompt_personalizado.strip() else construir_prompt(mensaje_usuario, productos)
+
+def generar_respuesta_ia(
+    mensaje_usuario: str, db: Session, usuario_id: int, prompt_personalizado: str = ""
+) -> str:
+    productos = obtener_productos_para_prompt(db, usuario_id)
+    prompt = (
+        prompt_personalizado.strip()
+        if prompt_personalizado.strip()
+        else construir_prompt(mensaje_usuario, productos)
+    )
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -66,12 +78,17 @@ def generar_respuesta_ia(mensaje_usuario: str, db: Session, prompt_personalizado
     data = {
         "model": "deepseek/deepseek-r1:free",
         "messages": [
-            {"role": "system", "content": "Sos un asistente de ventas para una tienda de alimentos."},
-            {"role": "user", "content": prompt}
-        ]
+            {
+                "role": "system",
+                "content": "Sos un asistente de ventas para una tienda de alimentos.",
+            },
+            {"role": "user", "content": prompt},
+        ],
     }
 
-    resp = requests.post("https://openrouter.ai/api/v1/chat/completions", json=data, headers=headers)
+    resp = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions", json=data, headers=headers
+    )
     try:
         resp.raise_for_status()
     except requests.HTTPError as e:

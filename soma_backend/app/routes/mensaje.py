@@ -15,9 +15,11 @@ from app.services.ia import generar_respuesta_ia
 
 router = APIRouter()
 
+
 @router.get("/", response_model=List[MensajeOut])
 def listar_mensajes(db: Session = Depends(get_db)):
     return crud_mensaje.get_all(db)
+
 
 @router.get("/{mensaje_id}", response_model=MensajeOut)
 def obtener_mensaje(mensaje_id: int, db: Session = Depends(get_db)):
@@ -25,6 +27,7 @@ def obtener_mensaje(mensaje_id: int, db: Session = Depends(get_db)):
     if not mensaje:
         raise HTTPException(status_code=404, detail="Mensaje no encontrado")
     return mensaje
+
 
 @router.post("/", response_model=List[MensajeOut])
 def crear_mensaje(mensaje: MensajeCreate, db: Session = Depends(get_db)):
@@ -39,14 +42,17 @@ def crear_mensaje(mensaje: MensajeCreate, db: Session = Depends(get_db)):
 
     # 🧠 Si es un mensaje de entrada, procesamos posible respuesta
     if mensaje.tipo == "entrada":
-        palabras = re.findall(r'\b\w+\b', mensaje.contenido.lower())
-        productos = db.query(Producto).all()
+        palabras = re.findall(r"\b\w+\b", mensaje.contenido.lower())
+        productos = db.query(Producto).filter_by(usuario_id=usuario.id).all()
 
         for producto in productos:
             if producto.nombre.lower() in palabras:
                 try:
                     respuesta_texto = generar_respuesta_ia(
-                        mensaje.contenido, producto.nombre, producto.precio_unitario
+                        mensaje_usuario=mensaje.contenido,
+                        db=db,
+                        usuario_id=usuario.id,
+                        prompt_personalizado=usuario.prompt_personalizado,
                     )
                 except Exception as e:
                     print(f"[ERROR IA] {e}")
@@ -57,7 +63,7 @@ def crear_mensaje(mensaje: MensajeCreate, db: Session = Depends(get_db)):
                     canal=mensaje.canal,
                     contenido=respuesta_texto,
                     tipo="automatica",
-                    respuesta_de=mensaje_guardado.id
+                    respuesta_de=mensaje_guardado.id,
                 )
                 mensaje_respuesta = crud_mensaje.create(db, mensaje_ia)
                 respuestas.append(mensaje_respuesta)
@@ -68,7 +74,7 @@ def crear_mensaje(mensaje: MensajeCreate, db: Session = Depends(get_db)):
                     numero_cliente=mensaje.cliente_id,
                     mensaje_cliente=mensaje.contenido,
                     respuesta_ia=respuesta_texto,
-                    timestamp=datetime.utcnow()
+                    timestamp=datetime.utcnow(),
                 )
                 db.add(conversacion)
                 db.commit()
@@ -76,12 +82,16 @@ def crear_mensaje(mensaje: MensajeCreate, db: Session = Depends(get_db)):
 
     return respuestas
 
+
 @router.put("/{mensaje_id}", response_model=MensajeOut)
-def actualizar_mensaje(mensaje_id: int, data: MensajeUpdate, db: Session = Depends(get_db)):
+def actualizar_mensaje(
+    mensaje_id: int, data: MensajeUpdate, db: Session = Depends(get_db)
+):
     actualizado = crud_mensaje.update(db, mensaje_id, data)
     if not actualizado:
         raise HTTPException(status_code=404, detail="Mensaje no encontrado")
     return actualizado
+
 
 @router.delete("/{mensaje_id}", response_model=MensajeOut)
 def eliminar_mensaje(mensaje_id: int, db: Session = Depends(get_db)):
